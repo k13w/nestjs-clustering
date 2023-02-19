@@ -1,12 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import {ClusterService} from "./cluster/cluster.service";
-import cluster from "cluster";
+import {AppClusterService} from "./cluster/cluster.service";
+import * as process from "process";
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(3000);
 
-  console.log(cluster)
-  ClusterService.init(app, 4, bootstrap)
+  await app.listen(3000);
 }
-bootstrap();
+
+
+//Call app-cluster.service.ts here.
+AppClusterService.clusterize( 4, bootstrap);

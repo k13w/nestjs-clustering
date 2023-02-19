@@ -1,32 +1,40 @@
 import cluster from "cluster";
 import * as process from "process";
-import {INestApplication} from "@nestjs/common";
 import * as os from "os";
+import {Logger} from "@nestjs/common";
 
-export class ClusterService {
-    static init(application: INestApplication, workers: Number, callback: Function): void {
-        console.log(cluster)
+export class AppClusterService {
+    static clusterize(workers: Number, callback: Function): void {
         if (cluster.isPrimary) {
-            console.log(`Primary server started on ${process.pid}`);
 
-            //ensure workers exit cleanly
-            process.on('SIGINT', async () => {
-                console.log('Cluster shutting down...')
-                // exit the master process
-                await application.close()
-                process.exit()
-            })
+            Logger.log(`Primary server started on ${process.pid}`);
 
-            const cpus = os.cpus().length
+            const processesCount = os.cpus().length
 
+            for (let index = 0; index < processesCount; index++) {
+                cluster.fork()
+            }
+
+            // process.on('SIGINT', function () {
+            //     console.log('Cluster shutting down...');
+            //     for (var id in cluster.workers) {
+            //         cluster.workers[id].kill();
+            //     }
+            //     // exit the master process
+            //     process.exit(0);
+            // });
+            //
+            //
             cluster.on('online', function (worker) {
-                console.log('Worker %s is online', worker.process.pid);
+                Logger.log( 'Worker ' + worker.process.pid + ' is online.' );
             });
 
             cluster.on('exit', (worker, code, signal) => {
-                console.log(`Worker ${worker.process.pid} died. Restarting`);
+                Logger.log(`Worker ${worker.process.pid} died. Restarting`);
                 cluster.fork();
             })
+        } else {
+            callback();
         }
     }
 }
